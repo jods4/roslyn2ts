@@ -1,0 +1,70 @@
+﻿// Auto-generated code, DO NOT EDIT, your changes will be lost!
+
+import { http, url } from './httpClient';
+
+// fakeController
+
+export function callMeMaybe(id: number, version: string, body: Dto) {
+	return http<string>(url`/api/fake/CallMe/${id}?version=${version}`, { method: 'POST', body: JSON.stringify(body) });
+}
+
+export function secondExample(x1: string, whatever: string | null) {
+	return http<Dto>(url`/api/fake?x1=${x1}&whatever=${whatever}`, { method: 'GET' });
+}
+
+export function voidMethod() {
+	return http<void>(url`/absolutely/no/return`, { method: 'GET' });
+}
+
+export function inferred() {
+	return http<Dto | null>(url`/api/fake`, { method: 'GET' });
+}
+
+export function anonymous() {
+	return http<$1[]>(url`/api/fake`, { method: 'GET' });
+}
+
+export interface Dto {
+    id: number;
+    name: string;
+    date: Date;
+    dateOffset: Date;
+    float: number;
+    double: number;
+    decimal: number;
+    short: number;
+    long: number;
+    color: Color;
+    nested1: Nested;
+    nested2: Nested | null;
+    intArray: number[];
+    objArray: Nested[];
+    queryable: Nested[];
+    iEnumerable: string[];
+}
+
+interface $1 {
+    id: number;
+    firstName: $2;
+    names: $2[];
+    nullableNames: $2[];
+}
+
+export interface Nested {
+    legit: bool;
+    nullableInt: number | null;
+    nullableRef: string | null;
+    intArray: (number | null)[];
+    objArray: (Nested | null)[];
+    inherited: number;
+}
+
+interface $2 {
+    name: string;
+}
+
+export enum Color {
+    green = 0,
+    red = 1,
+    blue = 2,
+}

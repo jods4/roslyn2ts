@@ -1,0 +1,78 @@
+﻿<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ assembly name="EnvDTE" #>
+<#@ assembly name="System.Collections" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="$(SolutionDir)RoslynToTS\bin\Debug\net48\RoslynToTS.dll" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Text.RegularExpressions" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="RoslynToTS" #>
+<#@ output extension=".ts.txt" #>
+<# 
+var serviceProvider = this.Host as IServiceProvider;
+var dte = serviceProvider.GetService(typeof(EnvDTE.DTE)) as EnvDTE.DTE;
+var vsProject = dte.Solution.FindProjectItem(Host.TemplateFile).ContainingProject;
+var project = new Project(vsProject.FullName);
+project.Load();
+#>
+// Auto-generated code, DO NOT EDIT, your changes will be lost!
+
+import { http, url } from './httpClient';
+<# 
+foreach (var @class in project.Classes) 
+{ 
+	WriteLine("\r\n// " + @class.Name);
+
+    var classRoute = @class.Route;    
+
+	foreach (var method in @class.Methods) 
+    {
+        var url = Url.Join("/api", classRoute, method.Route);
+        var routeParameters = Regex.Matches(url, @"\$\{([^}]+)\}")
+                                   .Cast<Match>()
+                                   .Select(m => m.Groups[1].Value).ToList();
+        var parameters = method.Parameters.ToList();
+        var query = parameters.Where(p => p.IsQuery && !routeParameters.Contains(p.Name)).ToList();
+#>
+
+export function <#= method.Name #>(<#= string.Join(", ", parameters.Select(p => $"{p.Name}: {p.Type.Name}")) #>) {
+	return http<<#= method.Returns.Name #>>(url`<# Write(url);
+                                                   if (query.Count > 0)
+                                                   {
+                                                       Write("?");
+                                                       Write(string.Join("&", query.Select(q => $"{q.Name}=${{{q.Name}}}")));
+                                                   }
+                                        #>`, { method: '<#= method.Verb #>'<#
+                                                if (parameters.FirstOrDefault(p => p.IsBody) is Parameter body)
+                                                    Write($", body: JSON.stringify({body.Name})");
+                                            #> });
+}
+<# 
+	}
+
+    foreach (var u in TsType.UserTypes)
+    {
+        // We don't export anonymous types because their name isn't stable upon API changes.
+        // Consumers must use TS crazy type inference instead.
+#>
+
+<#= u.IsAnonymous ? "" : "export "#>interface <#= u.Name #> {
+<#      foreach (var p in u.Properties) { #>
+    <#= p.Name #>: <#= p.Type.Name #>;
+<#      } #>
+}
+<#
+    }    
+} 
+
+foreach (var e in TsType.Enums)
+{
+#>
+
+export enum <#= e.Name #> {
+<#  foreach (var v in e.EnumValues) { #>
+    <#= v.Name #> = <#= v.Value #>,
+<#  } #>
+}
+<# } #>
